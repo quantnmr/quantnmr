@@ -28,6 +28,19 @@ def fit_exp_decay_I0(t, I, param_guess=None):
     fit = curve_fit(env_model, t, I, p0=param_guess, maxfev=200000)
     return fit, env_model(t, fit[0][0], fit[0][1], fit[0][2])
 
+def fit_T1_recovery(t, I, param_guess=None):
+    # Fit relaxation curves to extract time parameters
+    if param_guess is None:
+        # make guess
+        param_guess = np.zeros(2)
+        param_guess[0] = 1
+        param_guess[1] = -I[0]
+        
+
+    env_model = lambda t, R, a: a*(1-2*np.exp(-R * t))
+    fit = curve_fit(env_model, t, I, p0=param_guess, maxfev=200000)
+    return fit, env_model(t, fit[0][0], fit[0][1])
+
 def fit_exp_decay(t, I, param_guess=None):
     # Fit relaxation curves to extract time parameters
     if param_guess is None:
