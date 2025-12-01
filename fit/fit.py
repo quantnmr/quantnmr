@@ -37,6 +37,7 @@ def fit_T1_recovery(t, I, param_guess=None):
         param_guess[1] = -I[0]
         
 
+
     env_model = lambda t, R, a: a*(1-2*np.exp(-R * t))
     fit = curve_fit(env_model, t, I, p0=param_guess, maxfev=200000)
     return fit, env_model(t, fit[0][0], fit[0][1])
