@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.optimize.minpack import curve_fit
 
 # ------------------------------------- #
 #              Functions                #
