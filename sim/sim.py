@@ -174,7 +174,7 @@ def R1_field_tc_S2(field, t_c, S2, p=None):
         p = Default_Params()
 
     B_0 = field * np.power(10, 6, dtype=np.longdouble) * 2 * np.pi / p.gamma_H
-    d_N = p.gamma_N * B_0 * p.delta_dN / (3 * np.sqrt(2))  # 15N CSA
+    # d_N = p.gamma_N * B_0 * p.delta_dN / (3 * np.sqrt(2))  # 15N CSA - not used in this form
     w_N = B_0 * p.gamma_N  # 15N frequency (radians/s)
     w_H = B_0 * p.gamma_H
 
@@ -192,7 +192,7 @@ def R2_field_tc_S2(field, t_c, S2, p=None):
         p = Default_Params()
 
     B_0 = field * np.power(10, 6, dtype=np.longdouble) * 2 * np.pi / p.gamma_H
-    d_N = p.gamma_N * B_0 * p.delta_dN / (3 * np.sqrt(2))  # 15N CSA
+    # d_N = p.gamma_N * B_0 * p.delta_dN / (3 * np.sqrt(2))  # 15N CSA - not used in this form
     w_N = B_0 * p.gamma_N  # 15N frequency (radians/s)
     w_H = B_0 * p.gamma_H
 
