@@ -1,16 +1,7 @@
 import numpy as np
-import MDAnalysis as mda
-import matplotlib.pyplot as plt
-import matplotlib
-import sys
 import quantnmr.md as qnmd
-from MDAnalysis.analysis import align, rms, dihedrals
+from MDAnalysis.analysis import dihedrals
 
-from MDAnalysis.analysis.rms import rmsd
-
-from numpy.linalg import norm
-
-import time
 
 # Bond and angle definitions
 
@@ -82,7 +73,6 @@ def O2_from_subtrajectory_by_bond_vector(trajectory_list: list, system_dict: dic
     for aa_type in system_dict:
         selection_string = f'resname {aa_type}'
         selection_aa = trajectory_list[0].select_atoms(selection_string)
-        n_systems = selection_aa.n_residues
         aa_idx = sorted(set(selection_aa.resids)) # reduces multiple atom selections down to just the residue ID numbers
         print(aa_type, aa_idx)
 
@@ -176,8 +166,26 @@ def calc_O2_from_traj_unit_vectors_RW(uvs, weights):
 
 
 def calc_phi_angles(trajectory_list: list, system_list: list):
-    '''calculate the phi angle of the CG-SD bond in methionines'''
-    from MDAnalysis.analysis import dihedrals
+    """
+    Calculate phi dihedral angles for specified residues across multiple trajectories.
+    
+    Currently configured to calculate the phi dihedral angle (CB-CG-SD-CE) for methionine residues.
+    The function computes dihedral angles for each residue in system_list across all frames
+    in each trajectory.
+    
+    Parameters:
+    -----------
+    trajectory_list : list
+        List of MDAnalysis Universe objects containing trajectory data.
+    system_list : list
+        List of residue numbers (resnums) to calculate angles for.
+    
+    Returns:
+    --------
+    angles : numpy.ndarray
+        Array of shape (n_frames, n_traj, n_syst) containing phi dihedral angles in radians
+        for each frame, trajectory, and system.
+    """
     n_traj = len(trajectory_list)
     n_syst = len(system_list)
     n_frames = trajectory_list[0].trajectory.n_frames
@@ -194,7 +202,26 @@ def calc_phi_angles(trajectory_list: list, system_list: list):
     
 
 def calc_theta_angles(trajectory_list: list, system_list: list):
-    '''calculate the theta angle of the CG-SD-CE bond in methionines'''
+    """
+    Calculate theta bond angles for specified residues across multiple trajectories.
+    
+    Currently configured to calculate the theta bond angle (CG-SD-CE) for methionine residues.
+    The function computes bond angles for each residue in system_list across all frames
+    in each trajectory.
+    
+    Parameters:
+    -----------
+    trajectory_list : list
+        List of MDAnalysis Universe objects containing trajectory data.
+    system_list : list
+        List of residue numbers (resnums) to calculate angles for.
+    
+    Returns:
+    --------
+    angles : numpy.ndarray
+        Array of shape (n_frames, n_traj, n_syst) containing theta bond angles in radians
+        for each frame, trajectory, and system.
+    """
     n_traj = len(trajectory_list)
     n_syst = len(system_list)
     n_frames = trajectory_list[0].trajectory.n_frames
@@ -209,6 +236,27 @@ def calc_theta_angles(trajectory_list: list, system_list: list):
     return angles  
 
 def thetaphi2uv(θ, φ):
+    """
+    Convert spherical coordinates (theta and phi angles) to a unit vector in Cartesian coordinates.
+    
+    Converts angles from degrees to a 3D unit vector (x, y, z) using spherical coordinate
+    transformation. The formula uses (180 - θ) for the polar angle conversion.
+    
+    Parameters:
+    -----------
+    θ : float or numpy.ndarray
+        Theta angle in degrees (polar angle, measured from z-axis).
+    φ : float or numpy.ndarray
+        Phi angle in degrees (azimuthal angle, measured from x-axis in xy-plane).
+    
+    Returns:
+    --------
+    tuple
+        A tuple of three values (x, y, z) representing the unit vector components:
+        - x: sin(180-θ) * cos(φ)
+        - y: sin(180-θ) * sin(φ)
+        - z: cos(180-θ)
+    """
     fac = np.pi / 180
     return np.sin(fac*(180 - θ))*np.cos(fac*φ), np.sin(fac*(180 - θ))*np.sin(fac*φ), np.cos(fac*(180 - θ)) 
 
@@ -224,17 +272,19 @@ def calculate_Ct_Palmer(vecs):
     sh = vecs.shape
     #print "= = = Debug of calculate_Ct_Palmer confirming the dimensions of vecs:", sh
     if sh[1]<50:
-        print >> sys.stderr,"= = = WARNING: there are less than 50 frames per block of memory-time!"
+        print("= = = WARNING: there are less than 50 frames per block of memory-time!", file=sys.stderr)
 
     if len(sh)!=4:
         # Not in the right form...
         #print >> sys.stderr, "= = = ERROR: The input vectors to calculate_Ct_Palmer is not of the expected 4-dimensional form! " % sh
         sys.exit(1)
-    nReplicates=sh[0] ; nDeltas=sh[1]//2 ; nResidues=sh[2]
+    nReplicates = sh[0]
+    nDeltas = sh[1] // 2
+    nResidues = sh[2]
     Ct_ind = np.zeros( (nReplicates, nDeltas,nResidues) )
     Ct  = np.zeros( (nDeltas,nResidues) )
     dCt = np.zeros( (nDeltas,nResidues) )
-    bFirst=True
+    #bFirst=True
     for delta in range(1,1+nDeltas):
         nVals=sh[1]-delta
         # = = Create < vi.v'i > with dimensions (nRep, nFr, nRes, 3) -> (nRep, nFr, nRes) -> ( nRep, nRes ), then average across replicates with SEM.
@@ -250,13 +300,37 @@ def calculate_Ct_Palmer(vecs):
         #Ct[delta-1]  = np.mean( tmp,axis=(0,1) )
         #dCt[delta-1] = np.std( tmp,axis=(0,1) ) / ( np.sqrt(nReplicates*nVals) - 1.0 )
 
-    #print "= = Bond %i Ct computed. Ct(%g) = %g , Ct(%g) = %g " % (i, dt[0], Ct_loc[0], dt[-1], Ct_loc[-1])
+    #print("= = Bond %i Ct computed. Ct(%g) = %g , Ct(%g) = %g " % (i, dt[0], Ct_loc[0], dt[-1], Ct_loc[-1]))
     # Return with dimensions ( nDeltas, nResidues ) by default.
     return Ct_ind, Ct, dCt
 
 
 
 def calc_unit_vectors(trajectory_list: list, resname: str='MET', atoms: list=['SD', 'CE']):
+    """
+    Calculate normalized bond vectors between two specified atoms for a given residue type.
+    
+    This function computes unit vectors representing the bond direction between two atoms
+    (e.g., SD-CE for methionine) for all residues of the specified type across multiple
+    trajectories. The bond vectors are normalized to unit length.
+    
+    Parameters:
+    -----------
+    trajectory_list : list
+        List of MDAnalysis Universe objects containing trajectory data.
+    resname : str, optional
+        Residue name to select (default: 'MET' for methionine).
+    atoms : list, optional
+        List of two atom names to define the bond vector. The vector points from
+        atoms[1] to atoms[0] (default: ['SD', 'CE']).
+    
+    Returns:
+    --------
+    norm_bond_vectors : numpy.ndarray
+        Array of shape (n_frames, n_traj, n_systems, 3) containing normalized bond vectors.
+        Each vector is a unit vector in 3D space representing the bond direction at each
+        frame, trajectory, and residue instance.
+    """
     n_traj = len(trajectory_list)
     n_frames = trajectory_list[0].trajectory.n_frames
     selection_string = f'resname {resname}'
