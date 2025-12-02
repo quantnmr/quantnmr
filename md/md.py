@@ -119,15 +119,59 @@ def O2_from_subtrajectory_by_bond_vector(trajectory_list: list, system_dict: dic
     
     
 
-def calc_O2_from_traj_unit_vectors(uvs): #nx3 numpy matrix
+def calc_O2_from_traj_unit_vectors(uvs):
+    """
+    Calculates the O2 order parameter from unit vectors of a trajectory.
+    This function assumes uvs is an nx3 numpy matrix where each row represents a unit vector in 3D space.
+
+    Parameters:
+    - uvs (numpy.ndarray): an nx3 matrix where each row is a unit vector in 3D space.
+
+    Returns:
+    - float: the calculated O2 order parameter.
+    """
+    # Squaring individual components
     x_sq = uvs[:, 0]**2
     y_sq = uvs[:, 1]**2
     z_sq = uvs[:, 2]**2
-    xy = uvs[:, 0]*uvs[:, 1]
-    xz = uvs[:, 0]*uvs[:, 2]
-    yz = uvs[:, 1]*uvs[:, 2]
+
+    # Computing products of different components
+    xy = uvs[:, 0] * uvs[:, 1]
+    xz = uvs[:, 0] * uvs[:, 2]
+    yz = uvs[:, 1] * uvs[:, 2]
+
+    # Calculating the mean squared values and computing the final O2 formula
     return (3/2) * (x_sq.mean()**2 + y_sq.mean()**2 + z_sq.mean()**2 + 
-              2*xy.mean()**2 +  2*xz.mean()**2 +  2*yz.mean()**2) - 0.5
+                    2 * xy.mean()**2 + 2 * xz.mean()**2 + 2 * yz.mean()**2) - 0.5
+
+def calc_O2_from_traj_unit_vectors_RW(uvs, weights):
+    """
+    Calculates the weighted O2 order parameter from unit vectors of a trajectory,
+    weighted by a numpy array of weights.
+
+    Parameters:
+    - uvs (numpy.ndarray): an nx3 matrix where each row is a unit vector in 3D space.
+    - weights (numpy.ndarray): an array of weights corresponding to each unit vector.
+
+    Returns:
+    - float: the calculated weighted O2 order parameter.
+    """
+
+    if uvs.shape[0] != weights.shape[0]:
+        print('Size Mismatch between Unit Vectors and Weights. The number of unit vectors must match the number of weights.')
+        return 0
+    else:
+        # Applying weights to products
+        x_sq = weights * uvs[:, 0]**2
+        y_sq = weights * uvs[:, 1]**2
+        z_sq = weights * uvs[:, 2]**2
+        xy = weights * uvs[:, 0] * uvs[:, 1]
+        xz = weights * uvs[:, 0] * uvs[:, 2]
+        yz = weights * uvs[:, 1] * uvs[:, 2]
+
+        # Calculating the mean squared values and computing the final O2 formula
+        return (3/2) * (x_sq.sum()**2 + y_sq.sum()**2 + z_sq.sum()**2 + 
+                        2 * xy.sum()**2 + 2 * xz.sum()**2 + 2 * yz.sum()**2) - 0.5
 
 
 
